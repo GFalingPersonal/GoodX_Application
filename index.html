@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GoodX Bookings by G.Faling</title>
+  <style>
+    .tabs { display: flex; gap: 1rem; cursor: pointer; margin-bottom: 1rem; }
+    .tab { padding: 0.5rem 1rem; border: 1px solid #ccc; border-radius: 6px; }
+    .tab.active { background: #007bff; color: white; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+  </style>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+  <h1>GoodX Bookings by G.Faling</h1>
+  <h2>Select API Mode</h2>
+  <div class="tabs">
+    <div class="tab" data-target="frontend-straight" data-script="frontend_straight.js">Frontend Straight</div>
+    <div class="tab active" data-target="frontend-proxy" data-script="frontend_proxy.js">Frontend Proxy</div>
+    <div class="tab" data-target="frontend-secure" data-script="frontend_secure.js">Frontend Secure</div>
+  </div>
+
+  <div id="frontend-straight" class="panel">
+    <h3>Run API Straight</h3>
+    <form onsubmit="return loginStraight(event)">
+      <label for="straight-user">Select Practice:</label>
+      <select id="straight-user"></select>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <div id="frontend-proxy" class="panel active">
+    <h3>Run API Through Proxy</h3>
+    <form onsubmit="return loginProxy(event)">
+        <label for="proxy-user">Select Practice:</label>
+        <select id="proxy-user"></select>
+        <input type="date" id="proxy-date" />
+        <button id="proxy-get-bookings" type="button">Get Bookings</button>
+        <div id="proxy-results"></div>
+    </form>
+  </div>
+
+  <div id="frontend-secure" class="panel">
+    <h3>Run API Through Secure Proxy</h3>
+    <form onsubmit="return loginSecure(event)">
+      <input type="text" placeholder="Practice_Name">
+      <input type="password" placeholder="Password">
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll(".tab");
+    const panels = document.querySelectorAll(".panel");
+    let activeScript = null;
+
+    function loadScript(file) {
+      if (activeScript) {
+        activeScript.remove(); // remove previously loaded script
+        activeScript = null;
+      }
+      const script = document.createElement("script");
+      script.src = file;
+      document.body.appendChild(script);
+      activeScript = script;
+    }
+
+    // Initialize with the first tab’s script
+    loadScript(document.querySelector(".tab.active").dataset.script);
+
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        // switch tab styles
+        tabs.forEach(t => t.classList.remove("active"));
+        panels.forEach(p => p.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.target).classList.add("active");
+
+        // load correct script for this mode
+        loadScript(tab.dataset.script);
+      });
+    });
+  </script>
+</body>
+</html>

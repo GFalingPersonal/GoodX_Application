@@ -1,0 +1,26 @@
+{
+  "name": "goodx_application",
+  "version": "1.0.0",
+  "description": "This is Gerrit Faling's application technical assessment assignment. \r It is a Web page that shows a calendar page of a medical practice and uses the GoodX API to CRUD bookings (Create, Read, Update, Delete).\r The API is user/pass authenticated via a log in call responds with a session_UID that the Web page stores in a cookie for follow on API calls.\r A user account has access to different Entities, each entity has Diaries, each diary has Bookings. Bookings have types, and statuses. Families are grouped in Debtor/Patient relationships.",
+  "main": "serverside.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GFalingPersonal/GoodX_Application.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/GFalingPersonal/GoodX_Application/issues"
+  },
+  "homepage": "https://github.com/GFalingPersonal/GoodX_Application#readme",
+  "dependencies": {
+    "axios": "^1.11.0",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0"
+  }
+}
