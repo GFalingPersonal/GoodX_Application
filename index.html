@@ -16,13 +16,13 @@
   <h1>GoodX Bookings by G.Faling</h1>
   <h2>Select API Mode</h2>
   <div class="tabs">
-    <div class="tab" data-target="frontend-straight" data-script="frontend_straight.js">Frontend Straight</div>
-    <div class="tab active" data-target="frontend-proxy" data-script="frontend_proxy.js">Frontend Proxy</div>
-    <div class="tab" data-target="frontend-secure" data-script="frontend_secure.js">Frontend Secure</div>
+    <div class="tab" data-target="frontend-straight">Frontend Straight</div>
+    <div class="tab active" data-target="frontend-proxy">Frontend Proxy</div>
+    <div class="tab" data-target="frontend-secure">Frontend Secure</div>
   </div>
 
   <div id="frontend-straight" class="panel">
-    <h3>Run API Straight</h3>
+    <h3>Run API Straight from Webpage, non-secure, CORS violations</h3>
     <form onsubmit="return loginStraight(event)">
       <label for="straight-user">Select Practice:</label>
       <select id="straight-user"></select>
@@ -31,18 +31,19 @@
   </div>
 
   <div id="frontend-proxy" class="panel active">
-    <h3>Run API Through Proxy</h3>
+    <h3>Run API Through Proxy, anyone use the screen</h3>
     <form onsubmit="return loginProxy(event)">
         <label for="proxy-user">Select Practice:</label>
         <select id="proxy-user"></select>
         <input type="date" id="proxy-date" />
         <button id="proxy-get-bookings" type="button">Get Bookings</button>
+        <button id="proxy-add-booking" type="button" onclick="openAddBookingModal()">Add Booking</button>
         <div id="proxy-results"></div>
     </form>
   </div>
 
   <div id="frontend-secure" class="panel">
-    <h3>Run API Through Secure Proxy</h3>
+    <h3>Run API Proxy Via Secured Screen</h3>
     <form onsubmit="return loginSecure(event)">
       <input type="text" placeholder="Practice_Name">
       <input type="password" placeholder="Password">
@@ -50,37 +51,94 @@
     </form>
   </div>
 
-  <script>
-    const tabs = document.querySelectorAll(".tab");
-    const panels = document.querySelectorAll(".panel");
-    let activeScript = null;
+    <!-- Add Booking Modal -->
+  <div id="add-booking-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
+    <div style="background:#fff; padding:20px; border-radius:10px; width:400px;">
+      <h3>Add Booking</h3>
+      <form id="add-booking-form">
+        <label>Date:</label><br>
+        <input type="date" id="modal-date" required><br><br>
 
-    function loadScript(file) {
-      if (activeScript) {
-        activeScript.remove(); // remove previously loaded script
-        activeScript = null;
-      }
-      const script = document.createElement("script");
-      script.src = file;
-      document.body.appendChild(script);
-      activeScript = script;
+        <label>Start Time:</label><br>
+        <input type="time" id="modal-time" value="08:00" required><br><br>
+
+        <label>Duration:</label><br>
+        <input type="text" id="modal-duration" value="15" required><br><br>
+
+        <label>Booking Type:</label><br>
+        <select id="modal-booking-type"></select><br><br>
+
+        <label>Status:</label><br>
+        <select id="modal-status"></select><br><br>
+
+        <label>Patient:</label><br>
+        <select id="modal-patient"></select><br><br>
+
+        <label>Reason:</label><br>
+        <input type="text" id="modal-reason" value="Consult" required><br><br>
+
+        <button type="submit">Save</button>
+        <button type="button" onclick="closeAddBookingModal()">Cancel</button>
+      </form>
+    </div>
+  </div>
+<script>
+  const tabs = document.querySelectorAll(".tab");
+  const panels = document.querySelectorAll(".panel");
+  let sessionUID = null; // shared session across modes
+
+  // Function to show a specific panel
+  function showPanel(panelId) {
+    // Reset all tabs and panels
+    tabs.forEach(t => t.classList.remove("active"));
+    panels.forEach(p => p.classList.remove("active"));
+
+    // Activate chosen tab + panel
+    const activeTab = document.querySelector(`.tab[data-target="${panelId}"]`);
+    if (activeTab) activeTab.classList.add("active");
+
+    const panel = document.getElementById(panelId);
+    if (panel) panel.classList.add("active");
+
+    // Extra logic per panel
+    if (panelId === "frontend-secure" && !sessionUID) {
+      console.log("Secure tab opened. No session, waiting for login...");
+      // Example: focus first input
+      const firstInput = panel.querySelector("input");
+      if (firstInput) firstInput.focus();
     }
+  }
 
-    // Initialize with the first tab’s script
-    loadScript(document.querySelector(".tab.active").dataset.script);
+  // Attach click listeners to tabs, with lazy init and only once
+  tabs.forEach(tab => {
+      let initialized = false; // local flag for this tab
 
-    tabs.forEach(tab => {
       tab.addEventListener("click", () => {
-        // switch tab styles
-        tabs.forEach(t => t.classList.remove("active"));
-        panels.forEach(p => p.classList.remove("active"));
-        tab.classList.add("active");
-        document.getElementById(tab.dataset.target).classList.add("active");
+          showPanel(tab.dataset.target);
 
-        // load correct script for this mode
-        loadScript(tab.dataset.script);
+          if (!initialized) {
+              if (tab.dataset.target === "frontend-straight" && window.initFrontendStraight) {
+                  window.initFrontendStraight();
+              } else if (tab.dataset.target === "frontend-secure" && window.initFrontendSecure) {
+                  window.initFrontendSecure();
+              }
+              initialized = true; // mark as initialized
+          }
       });
-    });
-  </script>
+  });
+
+  // Initialize default active panel on page load
+  const initialTab = document.querySelector(".tab.active");
+  if (initialTab) {
+    showPanel(initialTab.dataset.target);
+  }
+</script>
+
+<!-- Load all scripts once -->
+<script src="frontend_straight.js"></script>
+<script src="frontend_proxy.js"></script>
+<script src="frontend_secure.js"></script>
+
 </body>
 </html>

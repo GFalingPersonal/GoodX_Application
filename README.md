@@ -12,7 +12,7 @@ $ start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --disable-web
 
 Then we can see all the GoodX API traffic, including the login details visible in the javascript F12. But we run into a second problem, JS does not handle HttpOnly session cookies correctly and the session_UID in bearer authentication fails. 
 
-I have implemented frontend_proxy.js and backend_proxy.py, that the python backend proxy handles the server-to-server connection without CORS and stores the cookie correctly. 
+I have implemented frontend_proxy.js and backend_proxy.py, that the python backend proxy handles the server-to-server connection without CORS and stores the cookie correctly, while sending the cookie to the frontend as well. 
 
 
 More requirements adhered to:

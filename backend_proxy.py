@@ -337,6 +337,63 @@ def add_booking():
         print("ERROR in /add_booking:", str(e))
         return jsonify({"error": "API request failed", "details": str(e)}), 500
 
+# Get booking types for a booking entry
+@app.route("/booking_types", methods=["GET"])
+def get_booking_types():
+    global backend_session_cookie, session
+    if not backend_session_cookie:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    diary_uid = request.args.get("diary_uid")
+    entity_uid = request.args.get("entity_uid")
+    if not diary_uid or not entity_uid:
+        return jsonify({"error": "Missing diary_uid or entity_uid"}), 400
+
+    url = f"{GXWEB_URL}/api/booking_type"
+    fields = ["uid","entity_uid","diary_uid","name","booking_status_uid","disabled","uuid"]
+    filter_payload = [
+        "AND",
+        ["=", ["I","entity_uid"], ["L", int(entity_uid)]],
+        ["=", ["I","diary_uid"], ["L", int(diary_uid)]],
+        ["NOT", ["I","disabled"]]
+    ]
+
+    headers = {"Cookie": f'session_id={backend_session_cookie["session_id"]}'}
+    params = {"fields": json.dumps(fields), "filter": json.dumps(filter_payload)}
+
+    resp = session.get(url, headers=headers, params=params)
+    resp.raise_for_status()
+    return jsonify(resp.json())
+
+# Get patients list
+@app.route("/patients", methods=["GET"])
+def get_patients():
+    global backend_session_cookie, session
+    if not backend_session_cookie:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    entity_uid = request.args.get("entity_uid", 1)  # default entity_uid=1
+    url = f"{GXWEB_URL}/api/patient"
+    fields = [
+        "uid","entity_uid","debtor_uid","name","surname","initials","title",
+        "id_type","id_no","date_of_birth","mobile_no","email","file_no",
+        "gender","dependant_no","dependant_type","acc_identifier",
+        "gap_medical_aid_option_uid","gap_medical_aid_no","private",
+        "patient_classification_uid"
+    ]
+    filter_payload = ["=", ["I", "entity_uid"], ["L", int(entity_uid)]]
+
+    headers = {"Cookie": f'session_id={backend_session_cookie["session_id"]}'}
+    params = {
+        "fields": json.dumps(fields),
+        "filter": json.dumps(filter_payload),
+        "limit": 100
+    }
+
+    resp = session.get(url, headers=headers, params=params)
+    resp.raise_for_status()
+    return jsonify(resp.json())
+
 # After all the definitions, Run the app
 if __name__ == "__main__":
     app.run(port=3000, debug=False)

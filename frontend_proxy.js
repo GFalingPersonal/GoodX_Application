@@ -1,6 +1,6 @@
 console.log("----------GF Frontend Proxy----------");
 
-let sessionUID = null;
+let proxy_sessionUID = null;
 let selectedDiaryUid = null;
 let selectedEntityUid = null;
 let bookingStatusMap = {};
@@ -16,8 +16,8 @@ async function login() {
     console.log("Login response:", data);
 
     if (data.success && data.session_UID) {
-        sessionUID = data.session_UID;
-        console.log("Login successful, session UID stored:", sessionUID);
+        proxy_sessionUID = data.session_UID;
+        console.log("Login successful, session UID stored:", proxy_sessionUID);
     } else {
         console.error("Login failed:", data.error);
     }
@@ -25,7 +25,7 @@ async function login() {
 }
 // Fetch booking_status collection via backend proxy
 async function getBookingStatus() {
-    if (!sessionUID) {
+    if (!proxy_sessionUID) {
         console.error("Not logged in!");
         return;
     }
@@ -58,7 +58,7 @@ async function getBookingStatus() {
 }
 // Fetch diary collection via backend proxy
 async function getDiary() {
-    if (!sessionUID) {
+    if (!proxy_sessionUID) {
         console.error("Not logged in!");
         return;
     }
@@ -173,6 +173,124 @@ async function getBookings() {
     }
 }
 
+// Load booking types into modal select
+async function loadBookingTypes() {
+    const res = await fetch(`http://localhost:3000/booking_types?diary_uid=${selectedDiaryUid}&entity_uid=${selectedEntityUid}`, {
+        method: "GET",
+        credentials: "include"
+    });
+    const data = await res.json();
+    console.log("Booking types:", data);
+
+    const select = document.getElementById("modal-booking-type");
+    select.innerHTML = "";
+    data.data.forEach(type => {
+        const opt = document.createElement("option");
+        opt.value = type.uid;
+        opt.textContent = type.name;
+        select.appendChild(opt);
+    });
+}
+
+// Load patients into modal select
+async function loadPatients() {
+    const res = await fetch(`http://localhost:3000/patients?entity_uid=${selectedEntityUid}`, {
+        method: "GET",
+        credentials: "include"
+    });
+    const data = await res.json();
+    console.log("Patients:", data);
+
+    const select = document.getElementById("modal-patient");
+    select.innerHTML = "";
+    data.data.forEach(patient => {
+        const opt = document.createElement("option");
+        opt.value = patient.uid;
+        opt.textContent = `${patient.surname}, ${patient.name}`;
+        select.appendChild(opt);
+    });
+}
+
+// Load booking statuses into modal select
+function loadStatuses() {
+    const select = document.getElementById("modal-status");
+    select.innerHTML = "";
+    Object.entries(bookingStatusMap).forEach(([uid, name]) => {
+        const opt = document.createElement("option");
+        opt.value = uid;
+        opt.textContent = name;
+        select.appendChild(opt);
+    });
+}
+
+// Open add booking modal form
+function openAddBookingModal() {
+    // Sync date from main form to modal
+    const proxyDateInput = document.getElementById("proxy-date");
+    const modalDateInput = document.getElementById("modal-date");
+    if (proxyDateInput && modalDateInput) {
+        modalDateInput.value = proxyDateInput.value; // sync selected date
+    }
+
+    document.getElementById("add-booking-modal").style.display = "flex";
+    loadBookingTypes();
+    loadPatients();
+    loadStatuses();
+}
+// Close add booking modal form
+function closeAddBookingModal() {
+    document.getElementById("add-booking-modal").style.display = "none";
+}
+
+document.getElementById("add-booking-form").addEventListener("submit", async (e) => {
+    e.preventDefault(); // prevent page reload
+
+    // collect form values (correct IDs!)
+    const bookingType = document.getElementById("modal-booking-type").value;
+    const bookingStatus = document.getElementById("modal-status").value;
+    const patient = document.getElementById("modal-patient").value;
+    const date = document.getElementById("modal-date").value;
+    const time = document.getElementById("modal-time").value;
+    const duration = document.getElementById("modal-duration").value;
+    const reason = document.getElementById("modal-reason").value;
+
+    const start_time = `${date}T${time}:00`;
+
+    const bookingData = {
+        model: {
+            entity_uid: selectedEntityUid,
+            diary_uid: selectedDiaryUid,
+            booking_type_uid: bookingType,
+            booking_status_uid: bookingStatus,
+            start_time,
+            duration,
+            patient_uid: patient,
+            reason,
+            cancelled: false
+        }
+    };
+
+    console.log("Submitting new booking:", bookingData);
+
+    const res = await fetch("http://localhost:3000/add_booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookingData),
+        credentials: "include"
+    });
+
+    const data = await res.json();
+    console.log("Add booking response:", data);
+
+    if (data && data.status === "OK" && data.data) {
+        alert("Booking added successfully!");
+        closeAddBookingModal();
+        getBookings(); // refresh table
+    } else {
+        alert("Failed to add booking: " + (data.error || "Unknown error"));
+    }
+});
+
 // Attach button listener immediately
 const getBtn = document.getElementById("proxy-get-bookings");
 if (getBtn) {
@@ -183,6 +301,11 @@ if (getBtn) {
 
 // Async login , diary load and booking status load on script load
 (async () => {
+    const today = new Date().toISOString().split("T")[0]; // format YYYY-MM-DD
+    const proxyDateInput = document.getElementById("proxy-date");
+    if (proxyDateInput) {
+        proxyDateInput.value = today;
+    }
     const loginResult = await login();
     if (loginResult.success) {
         const diaryResult = await getDiary();
