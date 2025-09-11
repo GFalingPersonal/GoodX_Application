@@ -208,15 +208,19 @@ def format_bookings_for_day(bookings_json):
             except Exception:
                 pretty_time = b["start_time"]  # fallback if parse fails
 
+        # append inside the for loop!
         day_sheet.append({
+            "uid": b.get("uid"),
             "start_time": b.get("start_time"),          # ISO string
             "time_pretty": pretty_time,                 # pretty HH:MM
             "duration": b.get("duration"),
             "booking_status_uid": b.get("booking_status_uid"),
+            "booking_type_uid": b.get("booking_type_uid"),
+            "patient_uid": b.get("patient_uid"),
             "patient_surname": b.get("patient_surname"),
             "patient_name": b.get("patient_name"),
+            "reason": b.get("reason"),
             "cancelled": b.get("cancelled"),
-            "uid": b.get("uid"),
         })
 
     # Sort by start_time, booking_status_uid, cancelled, patient_surname, patient_name
@@ -296,7 +300,9 @@ def get_bookings():
     try:
         resp = session.get(url, headers=headers, params=params)
         resp.raise_for_status()
+        print("DEBUG: booking response:", resp.json())
         format_data = format_bookings_for_day(resp.json())
+        print("DEBUG: format_data response:", format_data)
         return jsonify({"data": format_data, "status": "OK"})   # Wrap in data/status structure
     except Exception as e:
         print("ERROR: booking request failed:", e)
@@ -336,7 +342,81 @@ def add_booking():
     except Exception as e:
         print("ERROR in /add_booking:", str(e))
         return jsonify({"error": "API request failed", "details": str(e)}), 500
+    
+# Update an existing booking - it PUTS the booking model as received from frontend
+@app.route("/booking/<booking_uid>", methods=["PUT"])
+def update_booking(booking_uid):
+    global backend_session_cookie, session
+    try:
+        if not backend_session_cookie:
+            return jsonify({"error": "Not authenticated"}), 401
 
+        booking_data = request.json.get("model")
+        if not booking_data:
+            return jsonify({"error": "Missing booking model"}), 400
+
+        url = f"{GXWEB_URL}/api/booking/{booking_uid}"
+        headers = {
+            "User-Agent": "PostmanRuntime/7.45.0",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Content-Type": "application/json",
+            "Cookie": f'session_id={backend_session_cookie["session_id"]}'
+        }
+
+        payload = {"model": booking_data}
+        print(f"DEBUG: Updating booking {booking_uid} with payload:", json.dumps(payload, indent=2))
+
+        resp = session.put(url, headers=headers, json=payload)
+        print("GoodX response status:", resp.status_code)
+
+        try:
+            print("GoodX response JSON:", resp.json())
+            return jsonify(resp.json()), resp.status_code
+        except Exception:
+            print("GoodX raw response:", resp.text)
+            return resp.text, resp.status_code
+
+    except Exception as e:
+        print(f"ERROR in update_booking {booking_uid}:", str(e))
+        return jsonify({"error": "Proxy exception", "details": str(e)}), 500
+    
+# Delete a booking via backend proxy, merely by marking it as cancelled
+@app.route("/booking/<booking_uid>", methods=["DELETE"])
+def delete_booking(booking_uid):
+    global backend_session_cookie, session
+    try:
+        if not backend_session_cookie:
+            return jsonify({"error": "Not authenticated"}), 401
+
+        payload = {
+            "model": {
+                "uid": int(booking_uid),
+                "cancelled": True
+            }
+        }
+
+        url = f"{GXWEB_URL}/api/booking/{booking_uid}"
+        headers = {
+            "User-Agent": "PostmanRuntime/7.45.0",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Content-Type": "application/json",
+            "Cookie": f'session_id={backend_session_cookie["session_id"]}'
+        }
+
+        print(f"DEBUG: Cancelling booking {booking_uid} via PUT with payload:", payload)
+        resp = session.put(url, headers=headers, json=payload)
+        resp.raise_for_status()
+
+        return jsonify(resp.json())
+
+    except Exception as e:
+        print(f"ERROR cancelling booking {booking_uid}:", str(e))
+        return jsonify({"error": "API request failed", "details": str(e)}), 500
+    
 # Get booking types for a booking entry
 @app.route("/booking_types", methods=["GET"])
 def get_booking_types():
