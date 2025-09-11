@@ -80,9 +80,7 @@ async function initFrontendStraight() {
     if (!straightTabInitialized) {
         straightTabInitialized = true;
         const loginResult = await loginDirect();
-// MOCK login for tab testing
-// const loginResult = { straight_sessionUID: "TEST_UID" };
-        console.log("Mock loginResult:", loginResult);
+        console.log("Straight API loginResult:", loginResult);
         if (loginResult?.straight_sessionUID) {
             await getDiaryDirect(loginResult.straight_sessionUID);
         }
