@@ -1,13 +1,10 @@
-# To learn more about how to use Nix to configure your environment
-# see: https://firebase.google.com/docs/studio/customize-workspace
 { pkgs, ... }: {
-  # Which nixpkgs channel to use.
   channel = "stable-24.05"; # or "unstable"
 
-  # Use https://search.nixos.org/packages to find packages
   packages = [
     pkgs.nodejs_20
-    # Create a Python environment with the required packages
+    pkgs.firebase-tools # Added firebase-tools
+    pkgs.docker         # to run python in docker
     (pkgs.python311.withPackages (ps: [
       ps.flask
       ps.requests
@@ -16,18 +13,15 @@
     ]))
   ];
 
-  # Sets environment variables in the workspace
-  env = {};
-  idx = {
-    # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
-    extensions = [
-      # "vscodevim.vim"
-    ];
+  env = { };
 
-    # Enable previews
+  idx = {
+    extensions = [ ];
+
     previews = {
       enable = true;
       previews = {
+        # Frontend: serve static HTML/JS on port 9002
         web = {
           command = [ "python" "-m" "http.server" "9002" "--bind" "0.0.0.0" ];
           manager = "web";
@@ -35,11 +29,10 @@
       };
     };
 
-    # Workspace lifecycle hooks
     workspace = {
-      # Runs when the workspace is (re)started
       onStart = {
-        # The backend will be started manually for now.
+        # Backend (Flask proxy) runs automatically but is not a preview
+        backend = "python backend_proxy.py";
       };
     };
   };

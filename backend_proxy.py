@@ -22,7 +22,13 @@ app = Flask(__name__)
 # The frontend origin is a dynamic URL like https://9002-....cloudworkstations.dev
 # A wildcard '*' is not allowed by browsers when 'supports_credentials' is true.
 # Therefore, we must use a regular expression to match the expected origin pattern.
-origin_regex = re.compile(r"https://\d+-firebase-goodxapplication-.*\.cloudworkstations\.dev")
+# --- CORS Configuration for Firebase Hosting + Dev Studio ---
+origin_regex = re.compile(
+    r"https://("                       # start
+    r"\d+-firebase-goodxapplication-.*\.cloudworkstations\.dev"  # dev/studio dynamic preview
+    r"|gfgoodxfirebase\.web\.app"       # Firebase Hosting
+    r")$"                               # end
+)
 CORS(app, origins=origin_regex, supports_credentials=True)
 # --- End of CORS Configuration ---
 
@@ -482,4 +488,5 @@ def get_patients():
 
 # After all the definitions, Run the app
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=3000, debug=False)
+    port = int(os.environ.get("PORT", 8080))  # Cloud Run sets $PORT
+    app.run(host="0.0.0.0", port=port, debug=False)
