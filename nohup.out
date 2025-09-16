@@ -1,0 +1,102 @@
+ * Serving Flask app 'backend_proxy'
+ * Debug mode: off
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:3000
+ * Running on http://10.88.0.3:3000
+[33mPress CTRL+C to quit[0m
+DEBUG: login payload: {'model': {'timeout': 259200}, 'auth': [['password', {'username': 'applicant_004', 'password': 'applica_4'}]]}
+DEBUG: login response status: 200
+DEBUG: login response headers: {'content-type': 'application/json; charset=utf-8', 'server-timing': 'total;dur=151, endpoint;dur=147', 'set-cookie': 'session_id="\\"9d79587c-62ab-4c83-83ff-47b3a2073238\\"_applicant_004"; Max-Age=2147483647; Path=/', 'date': 'Tue, 16 Sep 2025 10:37:17 GMT', 'server': 'Python/3.11 aiohttp/3.8.4', 'strict-transport-security': 'max-age=31536000', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-frame-options': 'SAMEORIGIN', 'x-content-type-options': 'nosniff', 'x-xss-protection': '1;mode=block', 'x-robots-tag': 'noindex, nofollow, noarchive', 'x-backend-server': 'cbqa', 'transfer-encoding': 'chunked', 'vary': 'Accept-Encoding', 'content-encoding': 'gzip'}
+DEBUG: login response body: {"status":"OK","data":{"uid":"9d79587c-62ab-4c83-83ff-47b3a2073238"}}
+DEBUG: raw Set-Cookie header: session_id="\"9d79587c-62ab-4c83-83ff-47b3a2073238\"_applicant_004"; Max-Age=2147483647; Path=/
+DEBUG: login response JSON: {'status': 'OK', 'data': {'uid': '9d79587c-62ab-4c83-83ff-47b3a2073238'}}
+DEBUG: parsed cookie for session_id: "\"9d79587c-62ab-4c83-83ff-47b3a2073238\"_applicant_004"
+DEBUG: backend_session_cookie stored: {'session_id': '"\\"9d79587c-62ab-4c83-83ff-47b3a2073238\\"_applicant_004"'}
+127.0.0.1 - - [16/Sep/2025 10:37:17] "POST /login HTTP/1.1" 200 -
+DEBUG: get backend_session_cookie: {'session_id': '"\\"9d79587c-62ab-4c83-83ff-47b3a2073238\\"_applicant_004"'}
+DEBUG: diary request URL: https://dev_interview.qagoodx.co.za/api/diary
+DEBUG: diary request params: {'fields': '["uid","entity_uid","treating_doctor_uid","service_center_uid","booking_type_uid","name","uuid","disabled"]'}
+DEBUG: Sending cookies: {'session_id': '"\\"9d79587c-62ab-4c83-83ff-47b3a2073238\\"_applicant_004"'}
+DEBUG: Sending headers: {'User-Agent': 'PostmanRuntime/7.45.0', 'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate, br', 'Connection': 'keep-alive'}
+DEBUG: diary response status_code: 200
+DEBUG: diary response headers: {'content-type': 'application/json; charset=utf-8', 'server-timing': 'total;dur=78, endpoint;dur=73', 'date': 'Tue, 16 Sep 2025 10:37:18 GMT', 'server': 'Python/3.11 aiohttp/3.8.4', 'strict-transport-security': 'max-age=31536000', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-frame-options': 'SAMEORIGIN', 'x-content-type-options': 'nosniff', 'x-xss-protection': '1;mode=block', 'x-robots-tag': 'noindex, nofollow, noarchive', 'x-backend-server': 'cbqa', 'transfer-encoding': 'chunked', 'vary': 'Accept-Encoding', 'content-encoding': 'gzip'}
+DEBUG: diary response text: {"status":"OK","data":[{"uid":4,"entity_uid":4,"treating_doctor_uid":7,"service_center_uid":9827,"booking_type_uid":null,"name":"GP_4","uuid":"8b8e6145-bc77-48b8-9eb0-de7799360918","disabled":false}]}
+127.0.0.1 - - [16/Sep/2025 10:37:18] "GET /diary HTTP/1.1" 200 -
+DEBUG: booking_status request URL: https://dev_interview.qagoodx.co.za/api/booking_status
+DEBUG: booking_status request params: {'fields': '["uid", "entity_uid", "diary_uid", "name", "next_booking_status_uid", "is_arrived", "is_final", "disabled"]', 'filter': '["AND", ["=", ["I", "entity_uid"], ["L", 4]], ["=", ["I", "diary_uid"], ["L", 4]], ["NOT", ["I", "disabled"]]]'}
+DEBUG: booking_status request headers: {'User-Agent': 'PostmanRuntime/7.45.0', 'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate, br', 'Connection': 'keep-alive', 'Cookie': 'session_id="\\"9d79587c-62ab-4c83-83ff-47b3a2073238\\"_applicant_004"'}
+127.0.0.1 - - [16/Sep/2025 10:37:18] "GET /booking_statuses?diary_uid=4&entity_uid=4 HTTP/1.1" 200 -
+DEBUG: booking request URL: https://dev_interview.qagoodx.co.za/api/booking
+DEBUG: booking request params: {'fields': '[["AS", ["I", "patient_uid", "name"], "patient_name"], ["AS", ["I", "patient_uid", "surname"], "patient_surname"], ["AS", ["I", "patient_uid", "debtor_uid", "name"], "debtor_name"], ["AS", ["I", "patient_uid", "debtor_uid", "surname"], "debtor_surname"], "uid", "entity_uid", "diary_uid", "booking_type_uid", "booking_status_uid", "patient_uid", "start_time", "duration", "treating_doctor_uid", "reason", "invoice_nr", "cancelled", "uuid"]', 'filter': '["AND", ["=", ["I", "diary_uid"], ["L", 4]], ["=", ["::", ["I", "start_time"], ["I", "date"]], ["L", "2025-09-16"]]]'}
+DEBUG: booking request headers: {'User-Agent': 'PostmanRuntime/7.45.0', 'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate, br', 'Connection': 'keep-alive', 'Cookie': 'session_id="\\"9d79587c-62ab-4c83-83ff-47b3a2073238\\"_applicant_004"'}
+DEBUG: booking response: {'status': 'OK', 'data': [{'patient_name': 'SUSPENSE', 'patient_surname': 'ERA SUSPENSE', 'debtor_name': 'SUSPENSE', 'debtor_surname': 'ERA SUSPENSE', 'uid': 432, 'entity_uid': 4, 'diary_uid': 4, 'booking_type_uid': 14, 'booking_status_uid': 21, 'patient_uid': 10, 'start_time': '2025-09-16T08:25:00', 'duration': 25, 'treating_doctor_uid': None, 'reason': 'Consult', 'invoice_nr': 'TMP295', 'cancelled': False, 'uuid': '81747c2b-44b5-4730-8a43-8660a202993b'}]}
+DEBUG: format_data response: [{'uid': 432, 'start_time': '2025-09-16T08:25:00', 'time_pretty': '08:25', 'duration': 25, 'booking_status_uid': 21, 'booking_type_uid': 14, 'patient_uid': 10, 'patient_surname': 'ERA SUSPENSE', 'patient_name': 'SUSPENSE', 'reason': 'Consult', 'cancelled': False}]
+127.0.0.1 - - [16/Sep/2025 10:37:18] "GET /bookings?diary_uid=4&date=2025-09-16 HTTP/1.1" 200 -
+DEBUG: login payload: {'model': {'timeout': 259200}, 'auth': [['password', {'username': 'applicant_004', 'password': 'applica_4'}]]}
+DEBUG: login response status: 409
+DEBUG: login response headers: {'content-type': 'application/json; charset=utf-8', 'server-timing': 'total;dur=7', 'content-length': '2', 'set-cookie': 'session_id=""; Max-Age=2147483647; Path=/', 'date': 'Tue, 16 Sep 2025 10:37:26 GMT', 'server': 'Python/3.11 aiohttp/3.8.4', 'strict-transport-security': 'max-age=31536000', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-frame-options': 'SAMEORIGIN', 'x-content-type-options': 'nosniff', 'x-xss-protection': '1;mode=block', 'x-robots-tag': 'noindex, nofollow, noarchive', 'x-backend-server': 'cbqa'}
+DEBUG: login response body: {}
+DEBUG: raw Set-Cookie header: session_id=""; Max-Age=2147483647; Path=/
+ERROR in /login: 409 Client Error: Conflict for url: https://dev_interview.qagoodx.co.za/api/session
+127.0.0.1 - - [16/Sep/2025 10:37:26] "[35m[1mPOST /login HTTP/1.1[0m" 500 -
+DEBUG: login payload: {'model': {'timeout': 259200}, 'auth': [['password', {'username': 'applicant_004', 'password': 'applica_4'}]]}
+DEBUG: login response status: 200
+DEBUG: login response headers: {'content-type': 'application/json; charset=utf-8', 'server-timing': 'total;dur=123, endpoint;dur=120', 'set-cookie': 'session_id="\\"745c71c2-b169-41a4-85e3-c4291b7e9467\\"_applicant_004"; Max-Age=2147483647; Path=/', 'date': 'Tue, 16 Sep 2025 10:37:34 GMT', 'server': 'Python/3.11 aiohttp/3.8.4', 'strict-transport-security': 'max-age=31536000', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-frame-options': 'SAMEORIGIN', 'x-content-type-options': 'nosniff', 'x-xss-protection': '1;mode=block', 'x-robots-tag': 'noindex, nofollow, noarchive', 'x-backend-server': 'cbqa', 'transfer-encoding': 'chunked', 'vary': 'Accept-Encoding', 'content-encoding': 'gzip'}
+DEBUG: login response body: {"status":"OK","data":{"uid":"745c71c2-b169-41a4-85e3-c4291b7e9467"}}
+DEBUG: raw Set-Cookie header: session_id="\"745c71c2-b169-41a4-85e3-c4291b7e9467\"_applicant_004"; Max-Age=2147483647; Path=/
+DEBUG: login response JSON: {'status': 'OK', 'data': {'uid': '745c71c2-b169-41a4-85e3-c4291b7e9467'}}
+DEBUG: parsed cookie for session_id: "\"745c71c2-b169-41a4-85e3-c4291b7e9467\"_applicant_004"
+DEBUG: backend_session_cookie stored: {'session_id': '"\\"745c71c2-b169-41a4-85e3-c4291b7e9467\\"_applicant_004"'}
+127.0.0.1 - - [16/Sep/2025 10:37:34] "POST /login HTTP/1.1" 200 -
+DEBUG: get backend_session_cookie: {'session_id': '"\\"745c71c2-b169-41a4-85e3-c4291b7e9467\\"_applicant_004"'}
+DEBUG: diary request URL: https://dev_interview.qagoodx.co.za/api/diary
+DEBUG: diary request params: {'fields': '["uid","entity_uid","treating_doctor_uid","service_center_uid","booking_type_uid","name","uuid","disabled"]'}
+DEBUG: Sending cookies: {'session_id': '"\\"745c71c2-b169-41a4-85e3-c4291b7e9467\\"_applicant_004"'}
+DEBUG: Sending headers: {'User-Agent': 'PostmanRuntime/7.45.0', 'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate, br', 'Connection': 'keep-alive'}
+DEBUG: diary response status_code: 200
+DEBUG: diary response headers: {'content-type': 'application/json; charset=utf-8', 'server-timing': 'total;dur=35, endpoint;dur=30', 'date': 'Tue, 16 Sep 2025 10:37:34 GMT', 'server': 'Python/3.11 aiohttp/3.8.4', 'strict-transport-security': 'max-age=31536000', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-frame-options': 'SAMEORIGIN', 'x-content-type-options': 'nosniff', 'x-xss-protection': '1;mode=block', 'x-robots-tag': 'noindex, nofollow, noarchive', 'x-backend-server': 'cbqa', 'transfer-encoding': 'chunked', 'vary': 'Accept-Encoding', 'content-encoding': 'gzip'}
+DEBUG: diary response text: {"status":"OK","data":[{"uid":4,"entity_uid":4,"treating_doctor_uid":7,"service_center_uid":9827,"booking_type_uid":null,"name":"GP_4","uuid":"8b8e6145-bc77-48b8-9eb0-de7799360918","disabled":false}]}
+127.0.0.1 - - [16/Sep/2025 10:37:34] "GET /diary HTTP/1.1" 200 -
+DEBUG: booking_status request URL: https://dev_interview.qagoodx.co.za/api/booking_status
+DEBUG: booking_status request params: {'fields': '["uid", "entity_uid", "diary_uid", "name", "next_booking_status_uid", "is_arrived", "is_final", "disabled"]', 'filter': '["AND", ["=", ["I", "entity_uid"], ["L", 4]], ["=", ["I", "diary_uid"], ["L", 4]], ["NOT", ["I", "disabled"]]]'}
+DEBUG: booking_status request headers: {'User-Agent': 'PostmanRuntime/7.45.0', 'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate, br', 'Connection': 'keep-alive', 'Cookie': 'session_id="\\"745c71c2-b169-41a4-85e3-c4291b7e9467\\"_applicant_004"'}
+DEBUG: booking request URL: https://dev_interview.qagoodx.co.za/api/booking
+DEBUG: booking request params: {'fields': '[["AS", ["I", "patient_uid", "name"], "patient_name"], ["AS", ["I", "patient_uid", "surname"], "patient_surname"], ["AS", ["I", "patient_uid", "debtor_uid", "name"], "debtor_name"], ["AS", ["I", "patient_uid", "debtor_uid", "surname"], "debtor_surname"], "uid", "entity_uid", "diary_uid", "booking_type_uid", "booking_status_uid", "patient_uid", "start_time", "duration", "treating_doctor_uid", "reason", "invoice_nr", "cancelled", "uuid"]', 'filter': '["AND", ["=", ["I", "diary_uid"], ["L", 4]], ["=", ["::", ["I", "start_time"], ["I", "date"]], ["L", "2025-09-16"]]]'}
+DEBUG: booking request headers: {'User-Agent': 'PostmanRuntime/7.45.0', 'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate, br', 'Connection': 'keep-alive', 'Cookie': 'session_id="\\"745c71c2-b169-41a4-85e3-c4291b7e9467\\"_applicant_004"'}
+127.0.0.1 - - [16/Sep/2025 10:37:35] "GET /booking_statuses?diary_uid=4&entity_uid=4 HTTP/1.1" 200 -
+DEBUG: booking response: {'status': 'OK', 'data': [{'patient_name': 'SUSPENSE', 'patient_surname': 'ERA SUSPENSE', 'debtor_name': 'SUSPENSE', 'debtor_surname': 'ERA SUSPENSE', 'uid': 432, 'entity_uid': 4, 'diary_uid': 4, 'booking_type_uid': 14, 'booking_status_uid': 21, 'patient_uid': 10, 'start_time': '2025-09-16T08:25:00', 'duration': 25, 'treating_doctor_uid': None, 'reason': 'Consult', 'invoice_nr': 'TMP295', 'cancelled': False, 'uuid': '81747c2b-44b5-4730-8a43-8660a202993b'}]}
+DEBUG: format_data response: [{'uid': 432, 'start_time': '2025-09-16T08:25:00', 'time_pretty': '08:25', 'duration': 25, 'booking_status_uid': 21, 'booking_type_uid': 14, 'patient_uid': 10, 'patient_surname': 'ERA SUSPENSE', 'patient_name': 'SUSPENSE', 'reason': 'Consult', 'cancelled': False}]
+127.0.0.1 - - [16/Sep/2025 10:37:35] "GET /bookings?diary_uid=4&date=2025-09-16 HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 10:37:41] "GET /patients?entity_uid=4 HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 10:37:41] "GET /booking_types?diary_uid=4&entity_uid=4 HTTP/1.1" 200 -
+DEBUG: Updating booking 432 with payload: {
+  "model": {
+    "uid": "432",
+    "diary_uid": 4,
+    "booking_type_uid": 14,
+    "booking_status_uid": 22,
+    "start_time": "2025-09-16T08:35:00",
+    "duration": 35,
+    "patient_uid": 10,
+    "reason": "Consult arrive",
+    "cancelled": false
+  }
+}
+GoodX response status: 200
+GoodX response JSON: {'status': 'OK', 'data': {'uid': 432}}
+127.0.0.1 - - [16/Sep/2025 10:38:02] "PUT /booking/432 HTTP/1.1" 200 -
+DEBUG: booking request URL: https://dev_interview.qagoodx.co.za/api/booking
+DEBUG: booking request params: {'fields': '[["AS", ["I", "patient_uid", "name"], "patient_name"], ["AS", ["I", "patient_uid", "surname"], "patient_surname"], ["AS", ["I", "patient_uid", "debtor_uid", "name"], "debtor_name"], ["AS", ["I", "patient_uid", "debtor_uid", "surname"], "debtor_surname"], "uid", "entity_uid", "diary_uid", "booking_type_uid", "booking_status_uid", "patient_uid", "start_time", "duration", "treating_doctor_uid", "reason", "invoice_nr", "cancelled", "uuid"]', 'filter': '["AND", ["=", ["I", "diary_uid"], ["L", 4]], ["=", ["::", ["I", "start_time"], ["I", "date"]], ["L", "2025-09-16"]]]'}
+DEBUG: booking request headers: {'User-Agent': 'PostmanRuntime/7.45.0', 'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate, br', 'Connection': 'keep-alive', 'Cookie': 'session_id="\\"745c71c2-b169-41a4-85e3-c4291b7e9467\\"_applicant_004"'}
+DEBUG: booking response: {'status': 'OK', 'data': [{'patient_name': 'SUSPENSE', 'patient_surname': 'ERA SUSPENSE', 'debtor_name': 'SUSPENSE', 'debtor_surname': 'ERA SUSPENSE', 'uid': 432, 'entity_uid': 4, 'diary_uid': 4, 'booking_type_uid': 14, 'booking_status_uid': 22, 'patient_uid': 10, 'start_time': '2025-09-16T08:35:00', 'duration': 35, 'treating_doctor_uid': None, 'reason': 'Consult arrive', 'invoice_nr': 'TMP295', 'cancelled': False, 'uuid': '81747c2b-44b5-4730-8a43-8660a202993b'}]}
+DEBUG: format_data response: [{'uid': 432, 'start_time': '2025-09-16T08:35:00', 'time_pretty': '08:35', 'duration': 35, 'booking_status_uid': 22, 'booking_type_uid': 14, 'patient_uid': 10, 'patient_surname': 'ERA SUSPENSE', 'patient_name': 'SUSPENSE', 'reason': 'Consult arrive', 'cancelled': False}]
+127.0.0.1 - - [16/Sep/2025 10:38:06] "GET /bookings?diary_uid=4&date=2025-09-16 HTTP/1.1" 200 -
+DEBUG: Cancelling booking 432 via PUT with payload: {'model': {'uid': 432, 'cancelled': True}}
+127.0.0.1 - - [16/Sep/2025 10:39:46] "DELETE /booking/432 HTTP/1.1" 200 -
+DEBUG: booking request URL: https://dev_interview.qagoodx.co.za/api/booking
+DEBUG: booking request params: {'fields': '[["AS", ["I", "patient_uid", "name"], "patient_name"], ["AS", ["I", "patient_uid", "surname"], "patient_surname"], ["AS", ["I", "patient_uid", "debtor_uid", "name"], "debtor_name"], ["AS", ["I", "patient_uid", "debtor_uid", "surname"], "debtor_surname"], "uid", "entity_uid", "diary_uid", "booking_type_uid", "booking_status_uid", "patient_uid", "start_time", "duration", "treating_doctor_uid", "reason", "invoice_nr", "cancelled", "uuid"]', 'filter': '["AND", ["=", ["I", "diary_uid"], ["L", 4]], ["=", ["::", ["I", "start_time"], ["I", "date"]], ["L", "2025-09-16"]]]'}
+DEBUG: booking request headers: {'User-Agent': 'PostmanRuntime/7.45.0', 'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate, br', 'Connection': 'keep-alive', 'Cookie': 'session_id="\\"745c71c2-b169-41a4-85e3-c4291b7e9467\\"_applicant_004"'}
+DEBUG: booking response: {'status': 'OK', 'data': [{'patient_name': 'SUSPENSE', 'patient_surname': 'ERA SUSPENSE', 'debtor_name': 'SUSPENSE', 'debtor_surname': 'ERA SUSPENSE', 'uid': 432, 'entity_uid': 4, 'diary_uid': 4, 'booking_type_uid': 14, 'booking_status_uid': 22, 'patient_uid': 10, 'start_time': '2025-09-16T08:35:00', 'duration': 35, 'treating_doctor_uid': None, 'reason': 'Consult arrive', 'invoice_nr': 'TMP295', 'cancelled': True, 'uuid': '81747c2b-44b5-4730-8a43-8660a202993b'}]}
+DEBUG: format_data response: [{'uid': 432, 'start_time': '2025-09-16T08:35:00', 'time_pretty': '08:35', 'duration': 35, 'booking_status_uid': 22, 'booking_type_uid': 14, 'patient_uid': 10, 'patient_surname': 'ERA SUSPENSE', 'patient_name': 'SUSPENSE', 'reason': 'Consult arrive', 'cancelled': True}]
+127.0.0.1 - - [16/Sep/2025 10:39:50] "GET /bookings?diary_uid=4&date=2025-09-16 HTTP/1.1" 200 -

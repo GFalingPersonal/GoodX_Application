@@ -51,7 +51,7 @@ function populateDiaryDropdown() {
     });
 
     // Re-select the previous diary if it still exists in the list
-    if (diaryDataCache.some(d => d.uid === previouslySelected)) {
+    if (diaryDataCache.some(d => d.uid == previouslySelected)) { // Use loose equality
         select.value = previouslySelected;
     } else if (diaryDataCache.length > 0) {
         // Otherwise, default to the first diary in the list
@@ -66,7 +66,8 @@ function populateDiaryDropdown() {
 function handleDiarySelectionChange() {
     const select = document.getElementById("proxy-user");
     selectedDiaryUid = select.value;
-    const selectedDiary = diaryDataCache.find(d => d.uid === selectedDiaryUid);
+    // Find the selected diary in the cache, using loose equality to match string/number IDs
+    const selectedDiary = diaryDataCache.find(d => d.uid == selectedDiaryUid);
 
     if (selectedDiary) {
         selectedEntityUid = selectedDiary.entity_uid;
@@ -532,18 +533,22 @@ function initializeEventListeners() {
         const bookingUID = e.target.dataset.bookingUid;
         const bookingData = {
             model: {
-                uid: bookingUID,
-                entity_uid: selectedEntityUid,
-                diary_uid: selectedDiaryUid,
-                booking_type_uid: document.getElementById("modal-booking-type").value,
-                booking_status_uid: document.getElementById("modal-status").value,
+                uid: bookingUID || null,
+                diary_uid: parseInt(selectedDiaryUid, 10),
+                booking_type_uid: parseInt(document.getElementById("modal-booking-type").value, 10),
+                booking_status_uid: parseInt(document.getElementById("modal-status").value, 10),
                 start_time: `${document.getElementById("modal-date").value}T${document.getElementById("modal-time").value}:00`,
-                duration: document.getElementById("modal-duration").value,
-                patient_uid: document.getElementById("modal-patient").value,
+                duration: parseInt(document.getElementById("modal-duration").value, 10),
+                patient_uid: parseInt(document.getElementById("modal-patient").value, 10),
                 reason: document.getElementById("modal-reason").value,
                 cancelled: false
             }
         };
+
+        // Only include entity_uid for NEW bookings
+        if (!bookingUID) {
+            bookingData.model.entity_uid = parseInt(selectedEntityUid, 10);
+        }
 
         const url = bookingUID ? `${backendUrl}/booking/${bookingUID}` : `${backendUrl}/add_booking`;
         const method = bookingUID ? "PUT" : "POST";
