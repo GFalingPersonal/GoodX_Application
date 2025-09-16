@@ -14,7 +14,7 @@ Running the API through the file frontend_straight.js I could see the GoodX API 
 
 I have implemented frontend_proxy.js and backend_proxy.py, that the python backend proxy handles the server-to-server connection without CORS and stores and uses the cookie correctly, while sending the cookie to the frontend as well for state awareness. 
 
-With the proxy API server, the call to login retrieves the cookie that is used for subsequent calls: getDiary, getBookings, getBookingStatuses, getBookingTypes, getPatients, createBooking, updateBooking, deleteBooking all works with the cookie as token. All the API calls mentioned works as expected, except for updateBooking we receive "ACTION_NOT_SUPPORTED:booking:update:entity_uid" from the API. Currently I expect the API user is not authorised to make certain updates, this will be followed up with the GoodX team. 
+With the proxy API server, the call to login retrieves the cookie that is used for subsequent calls: getDiary, getBookings, getBookingStatuses, getBookingTypes, getPatients, createBooking, updateBooking, deleteBooking all works with the cookie as token. All the API calls mentioned works as expected. The backend_proxy.py if hosted on Google Cloud and the frontend on Google Firebase
 
 Requirements already adhered to:
  • Validation: Consider adding validation to data input fields where necessary.

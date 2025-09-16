@@ -1,23 +1,13 @@
 // ---- Dynamic Backend URL Configuration ----
-// To make the app portable, we dynamically construct the backend URL based on the current frontend URL.
-// This is crucial for environments like Firebase Studio where the domain is auto-generated.
-let backendUrl;
-try {
-    // Get the current URL of the frontend (e.g., https://9002-....cloudworkstations.dev)
-    const frontendUrl = new URL(window.location.href);
+// In Firebase the backend_proxy.py must be run manuially
+// Dev/preview
+//  let backendUrl = "http://localhost:3000";
 
-    // In Firebase Studio, the hostname contains the port. Replace the frontend port with the backend port.
-    const newHostname = frontendUrl.hostname.replace(/\d+/, '3000');
-    
-    // Construct the new URL. The origin is composed of protocol, hostname, and port.
-    backendUrl = `https://${newHostname}`;
+// In Prod we are running the backend_proxy in https://console.cloud.google.com/
+    let backendUrl = "https://goodx-backend-829359623923.us-central1.run.app";
 
-    console.log(`Backend URL dynamically set to: ${backendUrl}`);
-} catch (error) {
-    // Fallback for safety, though this should not fail in a browser environment.
-    console.error("Could not dynamically set backend URL, falling back to localhost.", error);
-    backendUrl = "http://localhost:3000";
-}
+console.log("Using backend:", backendUrl);
+
 // ---- End of Dynamic URL Configuration ----
 console.log("----------GF Frontend Proxy----------");
 
