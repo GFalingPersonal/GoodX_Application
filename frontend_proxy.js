@@ -1,31 +1,123 @@
+// ---- Dynamic Backend URL Configuration ----
+// To make the app portable, we dynamically construct the backend URL based on the current frontend URL.
+// This is crucial for environments like Firebase Studio where the domain is auto-generated.
+let backendUrl;
+try {
+    // Get the current URL of the frontend (e.g., https://9002-....cloudworkstations.dev)
+    const frontendUrl = new URL(window.location.href);
+
+    // In Firebase Studio, the hostname contains the port. Replace the frontend port with the backend port.
+    const newHostname = frontendUrl.hostname.replace(/\d+/, '3000');
+    
+    // Construct the new URL. The origin is composed of protocol, hostname, and port.
+    backendUrl = `https://${newHostname}`;
+
+    console.log(`Backend URL dynamically set to: ${backendUrl}`);
+} catch (error) {
+    // Fallback for safety, though this should not fail in a browser environment.
+    console.error("Could not dynamically set backend URL, falling back to localhost.", error);
+    backendUrl = "http://localhost:3000";
+}
+// ---- End of Dynamic URL Configuration ----
 console.log("----------GF Frontend Proxy----------");
 
 let proxy_sessionUID = null;
+let loginInProgress = false;
+let backoffDelay = 10000; // start with 10s
+const maxBackoff = 60000; // cap at 1 minute
+let backoffTimer = null;
 let selectedDiaryUid = null;
 let selectedEntityUid = null;
-// Global caches, it gets refreshed when we open the modal, but we cache to avoid race conditions
+
+// --- Global Caches ---
+let diaryDataCache = [];
 let patientsCache = [];
 let bookingTypesCache = [];
 let bookingStatusMap = {};
 
+// --- Helper Functions ---
+
+// Populates the diary dropdown from the cache
+function populateDiaryDropdown() {
+    const select = document.getElementById("proxy-user");
+    const previouslySelected = select.value;
+    select.innerHTML = "";
+
+    diaryDataCache.forEach(entry => {
+        const option = document.createElement("option");
+        option.value = entry.uid;
+        option.textContent = entry.name;
+        select.appendChild(option);
+    });
+
+    // Re-select the previous diary if it still exists in the list
+    if (diaryDataCache.some(d => d.uid === previouslySelected)) {
+        select.value = previouslySelected;
+    } else if (diaryDataCache.length > 0) {
+        // Otherwise, default to the first diary in the list
+        select.value = diaryDataCache[0].uid;
+    }
+    
+    // Trigger the change handler to update other parts of the UI
+    handleDiarySelectionChange();
+}
+
+// Handles the logic when a new diary is selected from the dropdown
+function handleDiarySelectionChange() {
+    const select = document.getElementById("proxy-user");
+    selectedDiaryUid = select.value;
+    const selectedDiary = diaryDataCache.find(d => d.uid === selectedDiaryUid);
+
+    if (selectedDiary) {
+        selectedEntityUid = selectedDiary.entity_uid;
+        console.log("Diary selection changed. New Diary UID:", selectedDiaryUid, "Entity UID:", selectedEntityUid);
+        // When diary changes, we must refetch statuses and bookings
+        getBookingStatus(); 
+        getBookings();
+    }
+}
+
+
+// --- API Functions ---
+
 // Login through the backend proxy
 async function login() {
     console.log("Starting login...");
-    const res = await fetch("http://localhost:3000/login", {
+    const res = await fetch(`${backendUrl}/login`, {
         method: "POST",
         credentials: "include"
     });
     const data = await res.json();
     console.log("Login response:", data);
-
-    if (data.success && data.session_UID) {
-        proxy_sessionUID = data.session_UID;
-        console.log("Login successful, session UID stored:", proxy_sessionUID);
-    } else {
-        console.error("Login failed:", data.error);
-    }
+    // This function NO LONGER sets the global session UID.
+    // It only returns the result of the API call.
     return data;
 }
+
+// Fetch diary collection via backend proxy
+async function getDiary() {
+    if (!proxy_sessionUID) {
+        console.error("Not logged in, cannot get diary.");
+        return;
+    }
+
+    console.log("Fetching diary via backend proxy...");
+    const res = await fetch(`${backendUrl}/diary`, {
+        method: "GET",
+        credentials: "include"
+    });
+
+    const data = await res.json();
+    console.log("Diary response:", data);
+
+    if (data && data.data) {
+        diaryDataCache = data.data; // Update cache
+        populateDiaryDropdown();   // Update UI from cache
+    }
+
+    return data;
+}
+
 // Fetch booking_status collection via backend proxy
 async function getBookingStatus() {
     if (!proxy_sessionUID) {
@@ -39,7 +131,7 @@ async function getBookingStatus() {
 
     console.log("Fetching booking_statuses via backend proxy...");
     const res = await fetch(
-        `http://localhost:3000/booking_statuses?diary_uid=${selectedDiaryUid}&entity_uid=${selectedEntityUid}`,
+        `${backendUrl}/booking_statuses?diary_uid=${selectedDiaryUid}&entity_uid=${selectedEntityUid}`,
         {
             method: "GET",
             credentials: "include"
@@ -55,48 +147,6 @@ async function getBookingStatus() {
             bookingStatusMap[status.uid] = status.name;
         });
         console.log("Booking Status Map:", bookingStatusMap);
-    }
-
-    return data;
-}
-// Fetch diary collection via backend proxy
-async function getDiary() {
-    if (!proxy_sessionUID) {
-        console.error("Not logged in!");
-        return;
-    }
-
-    console.log("Fetching diary via backend proxy...");
-    const res = await fetch(`http://localhost:3000/diary`, {
-        method: "GET",
-        credentials: "include"
-    });
-
-    const data = await res.json();
-    console.log("Diary response:", data);
-
-    if (data && data.data) {
-        const select = document.getElementById("proxy-user");
-        select.innerHTML = "";
-
-        data.data.forEach(entry => {
-            const option = document.createElement("option");
-            option.value = entry.uid;
-            option.textContent = entry.name;
-            select.appendChild(option);
-        });
-
-        // Default selection
-        selectedDiaryUid = data.data[0].uid;
-        selectedEntityUid = data.data[0].entity_uid;
-
-        // Update on change
-        select.addEventListener("change", (e) => {
-            selectedDiaryUid = e.target.value;                                              // Store selected diary UID
-            selectedEntityUid = data.data.find(d => d.uid === selectedDiaryUid).entity_uid; // Store selected entity UID
-            console.log("Selected diary UID:", selectedDiaryUid);
-            getBookingStatus();             // Fetch booking statuses for the selected diary
-        });
     }
 
     return data;
@@ -174,15 +224,6 @@ function attachEditBookingListeners() {
             const typeUID    = tr.dataset.typeUid || "";
             const statusUID  = tr.dataset.statusUid || "";
 
-            console.log("---- Edit button clicked ----");
-            console.log("bookingUID:", bookingUID);
-            console.log("patientUID:", patientUID);
-            console.log("duration:", duration);
-            console.log("reason:", reason);
-            console.log("startTime:", startTime);
-            console.log("typeUID:", typeUID);
-            console.log("statusUID:", statusUID);
-
             // Split date/time
             let datePart = "", timePart = "";
             if (startTime.includes("T")) {
@@ -192,8 +233,6 @@ function attachEditBookingListeners() {
             } else {
                 timePart = startTime;
             }
-
-            console.log("Parsed datePart:", datePart, "timePart:", timePart);
 
             // Fill modal fields
             document.getElementById("modal-date").value =
@@ -208,7 +247,6 @@ function attachEditBookingListeners() {
             await loadBookingTypes(typeUID);
             await loadStatuses(statusUID);
 
-            console.log("Setting modal selects...");
             document.getElementById("modal-patient").value = patientUID || "";
             document.getElementById("modal-booking-type").value = typeUID || "";
             document.getElementById("modal-status").value = statusUID || "";
@@ -218,8 +256,6 @@ function attachEditBookingListeners() {
 
             // Show modal
             document.getElementById("add-booking-modal").style.display = "flex";
-
-            console.log("Modal populated with booking:", bookingUID);
         });
     });
 }
@@ -229,7 +265,7 @@ function attachDeleteBookingListeners() {
     const buttons = document.querySelectorAll(".delete-booking-btn");
     buttons.forEach(btn => {
         btn.addEventListener("click", async (e) => {
-            e.preventDefault();  // prevent default button behavior
+            e.preventDefault();
             const tr = e.target.closest("tr");
             if (!tr) return;
 
@@ -243,13 +279,12 @@ function attachDeleteBookingListeners() {
             if (!confirmDelete) return;
 
             try {
-                const res = await fetch(`http://localhost:3000/booking/${bookingUID}`, {
+                const res = await fetch(`${backendUrl}/booking/${bookingUID}`, {
                     method: "DELETE",
                     credentials: "include"
                 });
 
                 const data = await res.json();
-                console.log("Delete booking response:", data);
 
                 if (res.ok && data.status === "OK") {
                     alert("Booking successfully cancelled!");
@@ -268,7 +303,8 @@ function attachDeleteBookingListeners() {
 // Fetch bookings for selected diary + date
 async function getBookings() {
     if (!selectedDiaryUid) {
-        alert("Please select a diary first.");
+        // This is normal on first load, so we don't show an alert
+        console.log("No diary selected, cannot fetch bookings.");
         return;
     }
 
@@ -281,7 +317,7 @@ async function getBookings() {
     }
 
     console.log("Fetching bookings via backend proxy...");
-    const url = `http://localhost:3000/bookings?diary_uid=${selectedDiaryUid}&date=${dateValue}`;
+    const url = `${backendUrl}/bookings?diary_uid=${selectedDiaryUid}&date=${dateValue}`;
     const res = await fetch(url, {
         method: "GET",
         credentials: "include"
@@ -290,10 +326,8 @@ async function getBookings() {
     const data = await res.json();
     console.log("Bookings response:", data);
 
-    // Use backend return structure: { data: [...], status: "OK" }
     if (Array.isArray(data.data) && data.data.length > 0) {
         document.getElementById("proxy-results").innerHTML = renderBookingsTable(data.data);
-        // Attach edit and delete listeners
         attachEditBookingListeners();
         attachDeleteBookingListeners();
     } else {
@@ -305,13 +339,11 @@ async function getBookings() {
 // Load booking types into modal select (with optional preselect)
 async function loadBookingTypes(selectedUID = "") {
     const res = await fetch(
-        `http://localhost:3000/booking_types?diary_uid=${selectedDiaryUid}&entity_uid=${selectedEntityUid}`, 
+        `${backendUrl}/booking_types?diary_uid=${selectedDiaryUid}&entity_uid=${selectedEntityUid}`, 
         { method: "GET", credentials: "include" }
     );
     const data = await res.json();
-    console.log("Booking types:", data);
-
-    bookingTypesCache = data.data || []; // cache
+    bookingTypesCache = data.data || [];
 
     const select = document.getElementById("modal-booking-type");
     select.innerHTML = "";
@@ -323,20 +355,18 @@ async function loadBookingTypes(selectedUID = "") {
     });
 
     if (selectedUID) {
-        select.value = selectedUID; // set selection if provided
+        select.value = selectedUID;
     }
 }
 
 // Load patients into modal select (with optional preselect)
 async function loadPatients(selectedUID = "") {
     const res = await fetch(
-        `http://localhost:3000/patients?entity_uid=${selectedEntityUid}`, 
+        `${backendUrl}/patients?entity_uid=${selectedEntityUid}`, 
         { method: "GET", credentials: "include" }
     );
     const data = await res.json();
-    console.log("Patients:", data);
-
-    patientsCache = data.data || []; // cache
+    patientsCache = data.data || [];
 
     const select = document.getElementById("modal-patient");
     select.innerHTML = "";
@@ -348,7 +378,7 @@ async function loadPatients(selectedUID = "") {
     });
 
     if (selectedUID) {
-        select.value = selectedUID; // set selection if provided
+        select.value = selectedUID;
     }
 }
 
@@ -364,38 +394,13 @@ function loadStatuses(statusUID = "") {
     });
     if (statusUID) sel.value = statusUID;
 }
-// Populate selects from cache
-function renderPatientSelect(selectedUID = "") {
-    const sel = document.getElementById("modal-patient");
-    sel.innerHTML = ""; // clear
-    for (const p of patientsCache) {
-        const opt = document.createElement("option");
-        opt.value = p.uid;
-        opt.textContent = `${p.surname}, ${p.name}`;
-        sel.appendChild(opt);
-    }
-    if (selectedUID) sel.value = selectedUID;
-}
-
-function renderBookingTypeSelect(selectedUID = "") {
-    const sel = document.getElementById("modal-booking-type");
-    sel.innerHTML = "";
-    for (const t of bookingTypesCache) {
-        const opt = document.createElement("option");
-        opt.value = t.uid;
-        opt.textContent = t.name;
-        sel.appendChild(opt);
-    }
-    if (selectedUID) sel.value = selectedUID;
-}
 
 // Open add booking modal form
 function openAddBookingModal() {
-    // Sync date from main form to modal
     const proxyDateInput = document.getElementById("proxy-date");
     const modalDateInput = document.getElementById("modal-date");
     if (proxyDateInput && modalDateInput) {
-        modalDateInput.value = proxyDateInput.value; // sync selected date
+        modalDateInput.value = proxyDateInput.value;
     }
 
     document.getElementById("add-booking-modal").style.display = "flex";
@@ -409,15 +414,12 @@ function validateBookingForm() {
     const duration = document.getElementById("modal-duration").value.trim();
     const reason = document.getElementById("modal-reason").value.trim();
 
-    // Duration must be integer between 1 and 100
     const durationInt = parseInt(duration, 10);
     if (isNaN(durationInt) || durationInt < 1 || durationInt > 100) {
         alert("Duration must be a number between 1 and 100.");
         return false;
     }
 
-    // Reason must allow only alphanumeric + basic punctuation (. ,)
-    // No brackets, no quotes
     const reasonRegex = /^[a-zA-Z0-9 .,]+$/;
     if (!reasonRegex.test(reason)) {
         alert("Reason may only contain letters, numbers, spaces, commas, and full stops.");
@@ -432,97 +434,173 @@ function closeAddBookingModal() {
     document.getElementById("add-booking-modal").style.display = "none";
 }
 
-// The Add Booking form submission handler, also used for updates
-document.getElementById("add-booking-form").addEventListener("submit", async (e) => {
-    e.preventDefault(); // prevent page reload
-    // Validate form
-    if (!validateBookingForm()) {
-        return; // stop if validation fails
-    }
-    // If validation passes, gather data
-    const bookingUID = e.target.dataset.bookingUid; // the UID already exists when we update
-    const bookingType = document.getElementById("modal-booking-type").value;
-    const bookingStatus = document.getElementById("modal-status").value;
-    const patient = document.getElementById("modal-patient").value;
-    const date = document.getElementById("modal-date").value;
-    const time = document.getElementById("modal-time").value;
-    const duration = document.getElementById("modal-duration").value;
-    const reason = document.getElementById("modal-reason").value;
-
-    const start_time = `${date}T${time}:00`;
-
-    const bookingData = {
-        model: {
-            uid: bookingUID,                        // important when we update
-            entity_uid: selectedEntityUid,
-            diary_uid: selectedDiaryUid,
-            booking_type_uid: bookingType,
-            booking_status_uid: bookingStatus,
-            start_time,
-            duration,
-            patient_uid: patient,
-            reason,
-            cancelled: false
-        }
-    };
-
-    console.log(bookingUID ? "Updating booking:" : "Adding new booking:", bookingData);
-    const url = bookingUID 
-        ? `http://localhost:3000/booking/${bookingUID}` // PUT
-        : "http://localhost:3000/add_booking";         // POST
-
-    const method = bookingUID ? "PUT" : "POST";
-
-    try {
-        const res = await fetch(url, {
-            method,
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(bookingData),
-            credentials: "include"
-        });
-
-        const data = await res.json();
-        console.log("Add booking response:", data);
-
-        // Handle the specific "update not supported" status
-        if (data.status && data.status.startsWith("ACTION_NOT_SUPPORTED")) {
-            alert("Booking update is not supported for this entry.");
-            console.warn("API prevented update:", data.status);
-        } else if (data && data.status === "OK" && data.data) {
-            alert(bookingUID ? "Booking updated!" : "Booking added!");
-            closeAddBookingModal();
-            getBookings(); // refresh table
-            e.target.dataset.bookingUid = ""; // clear booking UID for next add or update
-        } else {
-            alert("Failed to add/update booking: " + (data.error || "Unknown error"));
-        }
-    } catch (err) {
-        console.error("Booking submission failed:", err);
-        alert("Failed to communicate with backend. Check console.");
-    }
-});
-
-// Attach button listener immediately
-const getBtn = document.getElementById("proxy-get-bookings");
-if (getBtn) {
-    getBtn.addEventListener("click", getBookings);
-} else {
-    console.error("Button #proxy-get-bookings not found!");
+// Check if the proxy tab is currently active
+function isProxyTabActive() {
+    const proxyTabContent = document.getElementById("frontend-proxy");
+    return proxyTabContent && proxyTabContent.classList.contains("active");
 }
 
-// Async login , diary load and booking status load on script load
+// --- Session Management ---
+
+// Main session-checking logic
+async function checkSession() {
+    if (!isProxyTabActive()) {
+        // console.log("checkSession: skipped, proxy tab not active");
+        return;
+    }
+
+    if (proxy_sessionUID) {
+        // console.log("checkSession: session already present:", proxy_sessionUID);
+        resetBackoff();
+        return true;
+    }
+
+    if (loginInProgress) {
+        console.log("checkSession: login already in progress, skipping.");
+        return false;
+    }
+
+    console.log("checkSession: no session found — running login()");
+    loginInProgress = true;
+
+    try {
+        const loginResult = await login();
+        if (loginResult && loginResult.success && loginResult.session_UID) {
+            // **REFACTORED LOGIC**
+            // 1. Set the session UID
+            proxy_sessionUID = loginResult.session_UID;
+            console.log("checkSession: login succeeded, UID stored:", proxy_sessionUID);
+            
+            resetBackoff();
+            
+            // 2. NOW, fetch the diary data
+            await getDiary();
+            
+            return true;
+        } else {
+            console.warn("checkSession: login failed, scheduling retry");
+            scheduleBackoff();
+            return false;
+        }
+    } catch (err) {
+        console.error("checkSession: login() error:", err);
+        scheduleBackoff();
+        return false;
+    } finally {
+        loginInProgress = false;
+    }
+}
+
+// Exponential backoff helpers for retrying login
+function scheduleBackoff() {
+    if (backoffTimer) return;
+
+    console.log(`checkSession: retry in ${backoffDelay / 1000}s...`);
+    backoffTimer = setTimeout(async () => {
+        backoffTimer = null;
+        backoffDelay = Math.min(backoffDelay * 2, maxBackoff);
+        await checkSession();
+    }, backoffDelay);
+}
+
+function resetBackoff() {
+    backoffDelay = 5000;
+    if (backoffTimer) {
+        clearTimeout(backoffTimer);
+        backoffTimer = null;
+    }
+}
+
+// --- Page Initialization and Event Listeners ---
+
+// Attach event listeners that should only be set once
+function initializeEventListeners() {
+    // Diary selection
+    document.getElementById("proxy-user").addEventListener("change", handleDiarySelectionChange);
+
+    // Get Bookings button
+    const getBtn = document.getElementById("proxy-get-bookings");
+    if (getBtn) {
+        getBtn.addEventListener("click", getBookings);
+    }
+
+    // Modal form submission (for add/update)
+    document.getElementById("add-booking-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!validateBookingForm()) return;
+
+        const bookingUID = e.target.dataset.bookingUid;
+        const bookingData = {
+            model: {
+                uid: bookingUID,
+                entity_uid: selectedEntityUid,
+                diary_uid: selectedDiaryUid,
+                booking_type_uid: document.getElementById("modal-booking-type").value,
+                booking_status_uid: document.getElementById("modal-status").value,
+                start_time: `${document.getElementById("modal-date").value}T${document.getElementById("modal-time").value}:00`,
+                duration: document.getElementById("modal-duration").value,
+                patient_uid: document.getElementById("modal-patient").value,
+                reason: document.getElementById("modal-reason").value,
+                cancelled: false
+            }
+        };
+
+        const url = bookingUID ? `${backendUrl}/booking/${bookingUID}` : `${backendUrl}/add_booking`;
+        const method = bookingUID ? "PUT" : "POST";
+
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(bookingData),
+                credentials: "include"
+            });
+            const data = await res.json();
+
+            if (data.status && data.status.startsWith("ACTION_NOT_SUPPORTED")) {
+                alert("Booking update is not supported for this entry.");
+            } else if (data && data.status === "OK" && data.data) {
+                alert(bookingUID ? "Booking updated!" : "Booking added!");
+                closeAddBookingModal();
+                getBookings();
+                e.target.dataset.bookingUid = "";
+            } else {
+                alert("Failed to add/update booking: " + (data.error || "Unknown error"));
+            }
+        } catch (err) {
+            console.error("Booking submission failed:", err);
+            alert("Failed to communicate with backend. Check console.");
+        }
+    });
+
+    // Session checking timers and tab-click triggers
+    setInterval(() => {
+        checkSession().catch(err => console.error("Periodic checkSession error:", err));
+    }, 10000);
+
+    const proxyTab = document.querySelector('.tab[data-target="frontend-proxy"]');
+    if (proxyTab) {
+        proxyTab.addEventListener('click', () => {
+            console.log("Proxy tab selected — ensuring session...");
+            checkSession().catch(err => console.error("Tab-triggered checkSession error:", err));
+        });
+    }
+}
+
+// --- Main Application Start ---
+
+// IIFE to run on script load
 (async () => {
-    const today = new Date().toISOString().split("T")[0]; // format YYYY-MM-DD
+    // Set default date to today
+    const today = new Date().toISOString().split("T")[0];
     const proxyDateInput = document.getElementById("proxy-date");
     if (proxyDateInput) {
         proxyDateInput.value = today;
     }
-    const loginResult = await login();
-    if (loginResult.success) {
-        const diaryResult = await getDiary();
-        if (diaryResult && diaryResult.status === "OK") {
-            await getBookingStatus();
-        }
-    }
+    
+    // Attach all persistent event listeners
+    initializeEventListeners();
+    
+    // Kick off the initial session check
+    await checkSession();
 })();
-// Note: The above IIFE ensures that login and diary fetching happen as soon as the script is loaded.

@@ -17,8 +17,14 @@ warnings.simplefilter('ignore', requests.packages.urllib3.exceptions.InsecureReq
 load_dotenv()
 
 app = Flask(__name__)
-# Allow localhost frontend to send credentials (cookies)
-CORS(app, origins=["http://127.0.0.1:5500"], supports_credentials=True)
+
+# --- CORS Configuration for Firebase Studio ---
+# The frontend origin is a dynamic URL like https://9002-....cloudworkstations.dev
+# A wildcard '*' is not allowed by browsers when 'supports_credentials' is true.
+# Therefore, we must use a regular expression to match the expected origin pattern.
+origin_regex = re.compile(r"https://\d+-firebase-goodxapplication-.*\.cloudworkstations\.dev")
+CORS(app, origins=origin_regex, supports_credentials=True)
+# --- End of CORS Configuration ---
 
 GXWEB_USER = os.getenv("GXWEB_USER")
 GXWEB_PASS = os.getenv("GXWEB_PASS")
@@ -57,7 +63,7 @@ def login():
         backend_session_cookie = {}
         if set_cookie_headers:
             # Match everything between session_id= and the first semicolon
-            match = re.search(r'session_id=("[^;]+");', set_cookie_headers)
+            match = re.search(r'session_id=(\"[^;]+\");', set_cookie_headers)
             if match:
                 session_id_value = match.group(1)
                 # Do NOT strip the outer quotes!
@@ -94,7 +100,7 @@ def get_diary():
 
     try:
         # Ignore frontend params, set fields exactly as Postman/cURL
-        fields_value = '["uid","entity_uid","treating_doctor_uid","service_center_uid","booking_type_uid","name","uuid","disabled"]'
+        fields_value = '[\"uid\",\"entity_uid\",\"treating_doctor_uid\",\"service_center_uid\",\"booking_type_uid\",\"name\",\"uuid\",\"disabled\"]'
         url = f"{GXWEB_URL}/api/diary"
         print("DEBUG: diary request URL:", url)
         print("DEBUG: diary request params:", {"fields": fields_value})
@@ -476,4 +482,4 @@ def get_patients():
 
 # After all the definitions, Run the app
 if __name__ == "__main__":
-    app.run(port=3000, debug=False)
+    app.run(host='0.0.0.0', port=3000, debug=False)
